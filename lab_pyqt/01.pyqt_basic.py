@@ -1,5 +1,5 @@
-#01. pyqt_basic.py
-#pyqt 기본 요소
+# 01.pyqt_basic.py
+
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget
 
