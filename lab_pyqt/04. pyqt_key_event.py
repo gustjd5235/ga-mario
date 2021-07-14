@@ -1,7 +1,7 @@
 # 04. pyqt_key_event.py
 # PyQt 키 이벤트
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget
 
 
 class MyApp(QWidget):
@@ -11,11 +11,6 @@ class MyApp(QWidget):
         self.setFixedSize(400, 300)
         # 창 제목 설정
         self.setWindowTitle('MyApp')
-
-        label_text = QLabel(self)
-        label_text.setText()
-        label_text.setGeometry(100, 100, 100, 100)
-
         # 창 띄우기
         self.show()
 

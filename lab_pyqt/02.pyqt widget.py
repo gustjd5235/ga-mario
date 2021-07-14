@@ -1,5 +1,5 @@
-#02. pyqt_widget.py
-#pyqt 위젯 배치
+# 02. pyqt_widget.py
+# pyqt 위젯 배치 (QLabel, QPushButton)
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel
 from PyQt5.QtGui import QImage, QPixmap
@@ -14,7 +14,7 @@ class MyApp(QWidget):
         #창 제목 설정
         self.setWindowTitle('GA-Mario')
         #버튼
-        button = QPushButton(self)
+        button = QPushButton(self) # 들어가는버튼이 나자신이다 (self)
         button.setText('버튼')
         button.setGeometry(200, 200, 100, 100)
 
@@ -29,11 +29,11 @@ class MyApp(QWidget):
             [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]]])
 
         qimage = QImage(image, image.shape[1], image.shape[0], QImage.Format_RGB888)
-        pixmap = QPixmap(qimage)
-        pixmap = pixmap.scaled(100, 100, Qt.IgnoreAspectRatio)
+        pixmap = QPixmap(qimage) # QImage를 QPixmap으로 전환
+        pixmap = pixmap.scaled(100, 100, Qt.IgnoreAspectRatio) # Ignore은 원본비율 무시한단 의미
 
         label_image.setPixmap(pixmap)
-        label_image.setGeometry(0, 0, 100, 100)
+        label_image.setGeometry(0, 0, 100, 100) # x좌표, y좌표, 가로면적, 세로면적
 
         #창 띄우기
         self.show()
