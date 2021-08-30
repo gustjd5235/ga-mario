@@ -1,18 +1,17 @@
-# 타이머 예제 1초마다 1씩올라가는 타이머
+# 05. pyqt_timer.py
+# PyQt 타이머 예제
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtCore import QTimer
+
 
 class MyApp(QWidget):
     def __init__(self):
         super().__init__()
-        #창 크기 조정
+        # 창 크기 고정
         self.setFixedSize(400, 300)
-        #창 제목 설정
+        # 창 제목 설정
         self.setWindowTitle('MyApp')
-
-        self.timerLabel = QLabel(self)
-        self.timerLabel.setGeometry(0, 0, 200, 200)
 
         # 타이머 생성
         self.qtimer = QTimer(self)
@@ -21,11 +20,12 @@ class MyApp(QWidget):
         # 1초(=1000밀리초)마다 연결된 함수를 실행
         self.qtimer.start(1000)
 
-        #창 띄우기
+        # 창 띄우기
         self.show()
 
     def timer(self):
         print('timer')
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
