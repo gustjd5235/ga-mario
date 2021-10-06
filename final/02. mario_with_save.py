@@ -1,3 +1,4 @@
+# 02. mario_with_save.py
 import retro
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
@@ -5,6 +6,8 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QBrush, QColor
 import numpy as np
 import random
+import os
+
 
 relu = lambda x: np.maximum(0, x)
 sigmoid = lambda x: 1.0 / (1.0 + np.exp(-x))
@@ -31,7 +34,21 @@ class Chromosome:
         return result
 
     def fitness(self):
-        return self.distance
+        # # 1. 시간을 반영한 거리 점수
+        # fit = self.distance ** 1.8 - self.frames ** 1.5
+        # # 2. 조금이라도 움직인 경우 보너스 +2500
+        # # if self.distance > 50:
+        # #     fit += 2500
+        # fit += min(max(self.distance - 50, 0), 1) * 2500
+        # # 3. 목적지에 도달한 경우 보너스 +1000000
+        # fit += self.win * 1000000
+        # # 4. 아무리 못해도 기본점수 1점
+        # # if fit < 1:
+        # #     fit = 1
+        # fit = max(fit, 1)
+        # fit = int(fit)
+        # return fit
+        return int(max(self.distance ** 1.8 - self.frames ** 1.5 + min(max(self.distance - 50, 0), 1) * 2500 + self.win * 1000000, 1))
 
 
 class GeneticAlgorithm:
@@ -42,10 +59,10 @@ class GeneticAlgorithm:
 
     def roulette_wheel_selection(self):
         result = []
-        # fitness_sum = sum(c.fitness() for c in chromosomes)
         fitness_sum = 0
         for chromosome in self.chromosomes:
             fitness_sum += chromosome.fitness()
+
         for _ in range(2):
             pick = random.uniform(0, fitness_sum)
             current = 0
@@ -54,6 +71,7 @@ class GeneticAlgorithm:
                 if current > pick:
                     result.append(chromosome)
                     break
+
         return result
 
     def elitist_preserve_selection(self):
@@ -96,16 +114,30 @@ class GeneticAlgorithm:
         self.static_mutation(chromosome.b2)
 
     def next_generation(self):
-        print(f'{self.generation}세대 시뮬레이션 완료.')
+        # 저장
+        if not os.path.exists('../data'):
+            os.mkdir('../data')
+        if not os.path.exists(f'../data/{self.generation}'):
+            os.mkdir(f'../data/{self.generation}')
+        for i in range(10):
+            if not os.path.exists(f'../data/{self.generation}/{i}'):
+                os.mkdir(f'../data/{self.generation}/{i}')
+            np.save(f'../data/{self.generation}/{i}/w1.npy', self.chromosomes[i].w1)
+            np.save('../data/' + str(self.generation) + '/' + str(i) + '/b1.npy', self.chromosomes[i].b1)
+            np.save(f'../data/{self.generation}/{i}/w2.npy', self.chromosomes[i].w2)
+            np.save(f'../data/{self.generation}/{i}/b2.npy', self.chromosomes[i].b2)
 
         next_chromosomes = []
         next_chromosomes.extend(self.elitist_preserve_selection())
-        print(f'엘리트 적합도: {next_chromosomes[0].fitness()}')
+        # for c in self.elitist_preserve_selection():
+        #     next_chromosomes.append(c)
 
         for i in range(4):
             selected_chromosome = self.selection()
 
-            child_chromosome1, child_chromosome2 = self.crossover(selected_chromosome[0], selected_chromosome[1])
+            child_chromosome1, child_chromosome2 = self.crossover(
+                selected_chromosome[0],
+                selected_chromosome[1])
 
             self.mutation(child_chromosome1)
             self.mutation(child_chromosome2)
@@ -114,6 +146,7 @@ class GeneticAlgorithm:
             next_chromosomes.append(child_chromosome2)
 
         self.chromosomes = next_chromosomes
+
         for c in self.chromosomes:
             c.distance = 0
             c.max_distance = 0
@@ -125,20 +158,19 @@ class GeneticAlgorithm:
         self.current_chromosome_index = 0
 
 
-class MyApp(QWidget):
+class Mario(QWidget):
     def __init__(self):
         super().__init__()
-        # 창 제목 설정
-        self.setWindowTitle('GA-Mario')
 
         self.env = retro.make(game='SuperMarioBros-Nes', state='Level1-1')
-        screen = self.env.reset()
+        self.env.reset()
 
+        screen = self.env.get_screen()
         self.screen_width = screen.shape[0] * 2
         self.screen_height = screen.shape[1] * 2
 
-        # 창 크기 고정
         self.setFixedSize(self.screen_width + 600, self.screen_height + 100)
+        self.setWindowTitle('GA-Mario')
 
         self.screen_label = QLabel(self)
         self.screen_label.setGeometry(0, 0, self.screen_width, self.screen_height)
@@ -149,12 +181,12 @@ class MyApp(QWidget):
         self.game_timer.timeout.connect(self.update_game)
         self.game_timer.start(1000 // 60)
 
-        # 창 띄우기
         self.show()
 
     def update_game(self):
         screen = self.env.get_screen()
-        qimage = QImage(screen, screen.shape[1], screen.shape[0], QImage.Format_RGB888)
+        original = QImage(screen, screen.shape[1], screen.shape[0], QImage.Format_RGB888)
+        qimage = QImage(original)
         pixmap = QPixmap(qimage)
         pixmap = pixmap.scaled(self.screen_width, self.screen_height, Qt.IgnoreAspectRatio)
         self.screen_label.setPixmap(pixmap)
@@ -163,8 +195,6 @@ class MyApp(QWidget):
     def paintEvent(self, event):
         painter = QPainter()
         painter.begin(self)
-
-        painter.setPen(QPen(Qt.black))
 
         ram = self.env.get_ram()
 
@@ -194,6 +224,8 @@ class MyApp(QWidget):
                 if 0 <= ex < full_screen_tiles.shape[1] and 0 <= ey < full_screen_tiles.shape[0]:
                     full_screen_tiles[ey][ex] = -1
 
+        painter.setPen(QPen(Qt.black))
+
         current_screen_page = ram[0x071A]
         screen_position = ram[0x071C]
         screen_offset = (256 * current_screen_page + screen_position) % 512
@@ -222,14 +254,13 @@ class MyApp(QWidget):
         painter.setBrush(QBrush(Qt.blue))
         painter.drawRect(self.screen_width + 16 * player_tile_position_x, 16 * player_tile_position_y, 16, 16)
 
-        painter.setPen(QPen(Qt.magenta, 4, Qt.SolidLine))
-        painter.setBrush(Qt.NoBrush)
         frame_x = player_tile_position_x
         frame_y = 2
+        painter.setPen(QPen(Qt.magenta, 4, Qt.SolidLine))
+        painter.setBrush(Qt.NoBrush)
         painter.drawRect(self.screen_width + 16 * frame_x, 16 * frame_y, 16 * 8, 16 * 10)
 
         input_data = screen_tiles[frame_y:frame_y+10, frame_x:frame_x+8]
-
         if 2 <= player_tile_position_y <= 11:
             input_data[player_tile_position_y - 2][0] = 2
 
@@ -252,7 +283,8 @@ class MyApp(QWidget):
         player_state = ram[0x000E]
         player_vertical_screen_position = ram[0x00B5]
 
-        if player_float_state == 0x03 or player_state in (0x06, 0x0B) or player_vertical_screen_position >= 2 or current_chromosome.stop_frames > 180:
+        if player_float_state == 0x03 or player_state in (0x06, 0x0B) or player_vertical_screen_position >= 2 \
+            or current_chromosome.stop_frames > 180:
             if player_float_state == 0x03:
                 current_chromosome.win = 1
 
@@ -270,7 +302,7 @@ class MyApp(QWidget):
             press_buttons = np.array([predict[5], 0, 0, 0, predict[0], predict[1], predict[2], predict[3], predict[4]])
             self.env.step(press_buttons)
 
-            for i in range(predict.shape[0]):
+            for i in range(6):
                 if predict[i] == 1:
                     painter.setBrush(QBrush(Qt.magenta))
                 else:
@@ -279,11 +311,10 @@ class MyApp(QWidget):
                 text = ('U', 'D', 'L', 'R', 'A', 'B')[i]
                 painter.drawText(self.screen_width + i * 40, 480, text)
 
-
         painter.end()
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = MyApp()
+    window = Mario()
     sys.exit(app.exec_())
